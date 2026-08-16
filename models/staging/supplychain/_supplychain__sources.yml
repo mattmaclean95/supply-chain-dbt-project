@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: supplychain
+    database: raw
+    tables:
+      - name: data_co_supply_chain_dataset
+        description: "Raw order-level supply chain data from DataCo, covering orders, shipping performance, customers, and product profitability."
