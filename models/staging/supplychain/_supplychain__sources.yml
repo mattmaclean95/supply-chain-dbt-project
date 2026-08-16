@@ -3,6 +3,90 @@ version: 2
 sources:
   - name: supplychain
     database: raw
+    schema: supplychain
     tables:
       - name: data_co_supply_chain_dataset
         description: "Raw order-level supply chain data from DataCo, covering orders, shipping performance, customers, and product profitability."
+        columns:
+          - name: "Order Item Id"
+            quote: true
+            data_tests:
+              - unique
+              - not_null
+
+          - name: "Order Id"
+            quote: true
+            data_tests:
+              - not_null
+
+          - name: "Order Customer Id"
+            quote: true
+            data_tests:
+              - not_null
+
+          - name: "Product Card Id"
+            quote: true
+            data_tests:
+              - not_null
+
+          - name: "Customer Id"
+            quote: true
+            data_tests:
+              - not_null
+
+          - name: "Type"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["CASH", "DEBIT", "PAYMENT", "TRANSFER"]
+
+          - name: "Delivery Status"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["Advance shipping", "Late delivery", "Shipping canceled", "Shipping on time"]
+
+          - name: "Late_delivery_risk"
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: [0, 1]
+                    quote: false
+
+          - name: "Customer Segment"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["Consumer", "Corporate", "Home Office"]
+
+          - name: "Market"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["Africa", "Europe", "LATAM", "Pacific Asia", "USCA"]
+
+          - name: "Order Status"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["CANCELED", "CLOSED", "COMPLETE", "ON_HOLD", "PAYMENT_REVIEW", "PENDING", "PENDING_PAYMENT", "PROCESSING", "SUSPECTED_FRAUD"]
+
+          - name: "Product Status"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: [0]
+                    quote: false
+
+          - name: "Shipping Mode"
+            quote: true
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ["First Class", "Same Day", "Second Class", "Standard Class"]
