@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  - name: stg_supplychain__orders
+    description: >
+      Cleaned and consistently named DataCo supply-chain records at one row per
+      order item. The model preserves source-provided order, customer, product,
+      shipping, and profitability attributes for downstream transformations.
+    columns:
+      - name: order_type
+        description: "Payment method used for the order, sourced from the raw `Type` field."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["CASH", "DEBIT", "PAYMENT", "TRANSFER"]
+
+      - name: days_for_shipping_actual
+        description: "Actual number of days taken to ship the order."
+
+      - name: days_for_shipment_scheduled
+        description: "Scheduled number of days allowed for shipment."
+
+      - name: benefit_per_order
+        description: "Source-reported benefit earned for the order."
+
+      - name: sales_per_customer
+        description: "Source-reported sales amount associated with the customer."
+
+      - name: delivery_status
+        description: "Delivery outcome based on actual performance against the shipping schedule."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Advance shipping", "Late delivery", "Shipping canceled", "Shipping on time"]
+
+      - name: late_delivery_risk
+        description: "Indicator equal to 1 when the order is at risk of late delivery and 0 otherwise."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+
+      - name: category_id
+        description: "Identifier for the product category associated with the order item."
+
+      - name: category_name
+        description: "Name of the product category associated with the order item."
+
+      - name: customer_city
+        description: "City in the customer's address."
+
+      - name: customer_country
+        description: "Country in the customer's address."
+
+      - name: customer_first_name
+        description: "Customer's first name."
+
+      - name: customer_id
+        description: "Identifier for the customer represented on the source record."
+        data_tests:
+          - not_null
+
+      - name: customer_last_name
+        description: "Customer's last name."
+
+      - name: customer_segment
+        description: "Commercial segment assigned to the customer."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Consumer", "Corporate", "Home Office"]
+
+      - name: customer_state
+        description: "State or first-level administrative area in the customer's address."
+
+      - name: customer_street
+        description: "Street in the customer's address."
+
+      - name: customer_zipcode
+        description: "Postal code in the customer's address."
+
+      - name: department_id
+        description: "Identifier for the department that contains the product category."
+
+      - name: department_name
+        description: "Name of the department that contains the product category."
+
+      - name: latitude
+        description: "Latitude associated with the customer's geographic location."
+
+      - name: longitude
+        description: "Longitude associated with the customer's geographic location."
+
+      - name: market
+        description: "Geographic sales market assigned to the order."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Africa", "Europe", "LATAM", "Pacific Asia", "USCA"]
+
+      - name: order_city
+        description: "Destination city recorded for the order."
+
+      - name: order_country
+        description: "Destination country recorded for the order."
+
+      - name: order_customer_id
+        description: "Identifier for the customer associated with the order."
+        data_tests:
+          - not_null
+
+      - name: order_date
+        description: "Date and time when the order was created."
+
+      - name: order_id
+        description: "Identifier for the order; repeated across its order-item rows."
+        data_tests:
+          - not_null
+
+      - name: order_item_product_id
+        description: "Product identifier recorded directly on the order item."
+
+      - name: order_item_discount
+        description: "Absolute discount amount applied to the order item."
+
+      - name: order_item_discount_rate
+        description: "Discount rate applied to the order item."
+
+      - name: order_item_id
+        description: "Primary key for the model at the order-item grain."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: order_item_product_price
+        description: "Unit product price recorded on the order item."
+
+      - name: order_item_profit_ratio
+        description: "Source-reported profit ratio for the order item."
+
+      - name: order_item_quantity
+        description: "Number of product units included in the order item."
+
+      - name: sales
+        description: "Source-reported gross sales amount for the order item."
+
+      - name: order_item_total
+        description: "Source-reported total amount for the order item after discounts."
+
+      - name: order_profit_per_order
+        description: "Source-reported profit amount for the order."
+
+      - name: order_region
+        description: "Geographic region assigned to the order destination."
+
+      - name: order_state
+        description: "State or first-level administrative area recorded for the order destination."
+
+      - name: order_status
+        description: "Current operational or payment status of the order."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["CANCELED", "CLOSED", "COMPLETE", "ON_HOLD", "PAYMENT_REVIEW", "PENDING", "PENDING_PAYMENT", "PROCESSING", "SUSPECTED_FRAUD"]
+
+      - name: order_zipcode
+        description: "Postal code recorded for the order destination."
+
+      - name: product_id
+        description: "Identifier for the product in the product catalog."
+        data_tests:
+          - not_null
+
+      - name: product_category_id
+        description: "Product category identifier stored on the product record."
+
+      - name: product_description
+        description: "Source-provided description of the product."
+
+      - name: product_name
+        description: "Display name of the product."
+
+      - name: product_price
+        description: "Catalog price of one unit of the product."
+
+      - name: product_status
+        description: "Numeric status code assigned to the product in the source system."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0]
+                quote: false
+
+      - name: shipping_date
+        description: "Date and time when the order was shipped."
+
+      - name: shipping_mode
+        description: "Service level selected for shipping the order."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["First Class", "Same Day", "Second Class", "Standard Class"]
