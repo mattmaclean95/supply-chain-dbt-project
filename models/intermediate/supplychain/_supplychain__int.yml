@@ -1,0 +1,156 @@
+version: 2
+
+models:
+  - name: int_orders
+    description: >
+      One row per order, deduplicated from the order-item grain using
+      SELECT DISTINCT. Assumes order-level fields (status, dates, geography,
+      shipping mode) are consistent across all items within an order —
+      validated against the full dataset with zero inconsistencies found.
+      If future data violates this assumption, the unique test on order_id
+      below will fail and surface it, since DISTINCT (unlike ROW_NUMBER)
+      does not silently force uniqueness.
+    columns:
+      - name: order_id
+        description: "Primary key. One row per order."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_customer_id
+        description: "Foreign key to the customer who placed the order."
+        data_tests:
+          - not_null
+      - name: order_date
+        description: "Date the order was placed."
+      - name: order_status
+        description: "Status of the order (e.g. COMPLETE, PENDING, CANCELED)."
+      - name: market
+        description: "High-level market grouping for the order's destination."
+      - name: order_region
+        description: "Region of the order destination."
+      - name: order_country
+        description: "Country of the order destination."
+      - name: order_state
+        description: "State/province of the order destination."
+      - name: order_city
+        description: "City of the order destination."
+      - name: shipping_mode
+        description: "Shipping service level selected for the order (e.g. Standard Class, First Class)."
+      - name: shipping_date
+        description: "Date the order shipped."
+
+  - name: int_order_items
+    description: >
+      One row per order item — the natural grain of the source data, no
+      deduplication required. product_category_id and order_item_product_id
+      were dropped after confirming, at full scale, that they are exact
+      duplicates of category_id and product_id respectively.
+    columns:
+      - name: order_item_id
+        description: "Primary key at the order-item grain."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Foreign key to int_orders."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('int_orders')
+              field: order_id
+      - name: product_id
+        description: "Foreign key to the product sold. Confirmed identical to the source's order_item_product_id column; that duplicate was dropped."
+        data_tests:
+          - not_null
+      - name: category_id
+        description: "Foreign key to the product's category. Confirmed identical to the source's product_category_id column; that duplicate was dropped."
+      - name: category_name
+        description: "Name of the product's category."
+      - name: product_name
+        description: "Name of the product sold."
+      - name: product_price
+        description: "Catalog list price of the product, independent of this specific sale."
+      - name: order_item_product_price
+        description: "Price of the product at the time of this specific sale — may differ from product_price."
+      - name: order_item_quantity
+        description: "Quantity of this product sold on this order item."
+      - name: order_item_discount
+        description: "Flat discount amount applied to this order item."
+      - name: order_item_discount_rate
+        description: "Discount percentage applied to this order item."
+      - name: order_item_total
+        description: >
+          Net amount charged for this line item after discount. Validated
+          at full scale as order_item_quantity * order_item_product_price
+          - order_item_discount (differences under $0.01 are rounding, not
+          formula violations).
+
+  - name: int_order_profitability
+    description: >
+      Order-item level profitability. sales (gross, pre-discount) and
+      order_item_total (net, post-discount) confirmed as distinct metrics
+      via formula validation, not redundant columns. order_profit is
+      deduplicated from two identical source columns (benefit_per_order,
+      order_profit_per_order — confirmed zero mismatches at full scale).
+      order_item_profit_ratio confirmed via validation to equal
+      order_profit / order_item_total (differences under $0.01 are
+      floating-point rounding, not a formula mismatch).
+    columns:
+      - name: order_item_id
+        description: "Primary key at the order-item grain."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: "Foreign key to int_orders."
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('int_orders')
+              field: order_id
+      - name: sales
+        description: "Gross sale value before discount (order_item_quantity * order_item_product_price)."
+      - name: order_item_total
+        description: "Net amount charged after discount."
+      - name: order_profit
+        description: "Profit earned on this order item. Sourced from benefit_per_order after confirming it is identical to order_profit_per_order."
+      - name: order_item_profit_ratio
+        description: "Profit margin ratio, confirmed equal to order_profit / order_item_total."
+
+  - name: int_delivery_performance
+    description: >
+      One row per order (deduplicated from item grain — validated at full
+      scale, no inconsistencies found across shipping/delivery columns).
+      Computes actual lateness from days_for_shipping_actual vs
+      days_for_shipment_scheduled and validates it against the source's
+      late_delivery_risk flag. The two agree in all cases except canceled
+      shipments, where lateness is not a meaningful concept — for
+      delivery_status = 'Shipping canceled', shipping_variance_days and
+      is_late_calculated are set to null rather than reporting a
+      misleading day count.
+    columns:
+      - name: order_id
+        description: "Primary key. One row per order."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('int_orders')
+              field: order_id
+      - name: days_for_shipping_actual
+        description: "Actual number of days the shipment took."
+      - name: days_for_shipment_scheduled
+        description: "Number of days the shipment was scheduled to take."
+      - name: shipping_variance_days
+        description: >
+          days_for_shipping_actual minus days_for_shipment_scheduled.
+          Null for canceled shipments, where the concept doesn't apply.
+      - name: is_late_calculated
+        description: >
+          True if the shipment took longer than scheduled. Null for
+          canceled shipments. Validated against late_delivery_risk with
+          full agreement outside of canceled orders.
+      - name: delivery_status
+        description: "Source-reported delivery outcome (e.g. Advance shipping, Late delivery, Shipping canceled)."
+      - name: late_delivery_risk
+        description: "Source-provided binary flag indicating delivery risk."
