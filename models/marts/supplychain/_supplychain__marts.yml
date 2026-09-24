@@ -1,0 +1,21 @@
+version: 2
+
+models:
+- name: fct_orders
+  description: >
+    Order-item grain fact table. Combines order-level attributes (customer,
+    geography, status) from int_order, item-level detail from int_order_items,
+    profitability from int_order_profitability, and delivery performance from
+    int_delivery_performance into a single wide table for BI reporting.
+  columns:
+    - name: order_item_id
+      description: "Primary key at the order-item grain."
+      data_tests:
+        - unique
+        - not_null
+    - name: order_id
+      data_tests:
+        - not_null
+        - relationships:
+            to: ref('int_order')
+            field: order_id
